@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
+import dj_database_url
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -77,12 +79,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-import dj_database_url
-import os
+
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://postgres.inieqibwnoutjsjodrow:8Z2GZ5DH26JXgpTC@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=disable',
+        default='postgresql://postgres:8Z2GZ5DH26JXgpTC@db.inieqibwnoutjsjodrow.supabase.co:5432/postgres?sslmode=disable',
         conn_max_age=600
     )
 }
