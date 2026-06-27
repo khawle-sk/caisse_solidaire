@@ -78,11 +78,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 import dj_database_url
+import os
 
 DATABASES = {
     'default': dj_database_url.config(
-        # Si le site est sur Render, il prend la base Supabase. Sinon, il garde SQLite sur ton PC pour tester.
-        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'),
+        default='postgresql://postgres.inieqibwnoutjsjodrow:8Z2GZ5DH26JXgpTC@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?sslmode=disable',
         conn_max_age=600
     )
 }
