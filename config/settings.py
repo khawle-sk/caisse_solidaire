@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://postgres:8Z2GZ5DH26JXgpTC@db.inieqibwnoutjsjodrow.supabase.co:5432/postgres?sslmode=disable',
+        default='postgresql://postgres.inieqibwnoutjsjodrow:8Z2GZ5DH26JXgpTC@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?sslmode=disable',
         conn_max_age=600
     )
 }
