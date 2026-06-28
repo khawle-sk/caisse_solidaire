@@ -47,7 +47,8 @@ def home(request):
         'query_mois': query_mois,
         'query_annee': query_annee,
     }
-    return render(request, 'caisse/home.html', context)
+    # 🌟 ICI : On change 'caisse/home.html' par ton vrai fichier 'index.html'
+    return render(request, 'index.html', context)
 
 
 # 2. Ajouter un versement/cotisation flexible (Multi-mois facultatif)
