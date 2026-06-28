@@ -4,7 +4,7 @@ from django.contrib.auth import views as auth_views
 from caisse import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+
     path('', views.home, name='home'),
     
     # Authentification personnalisée (Professionnelle)
