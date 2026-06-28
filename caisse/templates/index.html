@@ -93,25 +93,29 @@
         <div class="card mb-5 p-4 card-shadow bg-white">
             <h5 class="font-weight-bold mb-3 text-secondary">🔍 Moteur de recherche et filtres</h5>
             <form method="GET" action="" class="row align-items-end">
-                <div class="col-md-4 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Rechercher par Nom :</label>
-                    <input type="text" name="nom" class="form-control" placeholder="Taper un nom..." value="{{ query_nom }}">
+                <div class="col-md-3 form-group mb-2 mb-md-0">
+                    <label class="form-label font-weight-bold small text-primary">Chercher un Donateur :</label>
+                    <input type="text" name="nom_v" class="form-control" placeholder="Nom du cotisant..." value="{{ query_nom_v }}">
                 </div>
                 <div class="col-md-3 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Filtrer par Mois (Cotisations) :</label>
+                    <label class="form-label font-weight-bold small text-danger">Chercher un Bénéficiaire :</label>
+                    <input type="text" name="nom_r" class="form-control" placeholder="Nom de l'aidé..." value="{{ query_nom_r }}">
+                </div>
+                <div class="col-md-2 form-group mb-2 mb-md-0">
+                    <label class="form-label font-weight-bold small text-muted">Mois (Cotisations) :</label>
                     <select name="mois" class="form-control">
-                        <option value="">-- Tous les mois --</option>
+                        <option value="">-- Tous --</option>
                         {% for code, nom_mois in mois_choices %}
                             <option value="{{ code }}" {% if query_mois == code %}selected{% endif %}>{{ nom_mois }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Filtrer par Année :</label>
+                    <label class="form-label font-weight-bold small text-muted">Par Année :</label>
                     <input type="number" name="annee" class="form-control" placeholder="Ex: 2026" value="{{ query_annee }}">
                 </div>
-                <div class="col-md-3 d-flex mb-md-0">
-                    <button type="submit" class="btn btn-secondary font-weight-bold flex-grow-1 mr-2">Filtrer</button>
+                <div class="col-md-2 d-flex mb-md-0">
+                    <button type="submit" class="btn btn-secondary font-weight-bold flex-grow-1 mr-1">Filtrer</button>
                     <a href="?" class="btn btn-light border font-weight-bold">Effacer</a>
                 </div>
             </form>
@@ -152,17 +156,16 @@
             <nav class="mt-3">
                 <ul class="pagination pagination-sm justify-content-center">
                     {% if page_obj_v.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.previous_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Précédent</a></li>
+                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.previous_page_number }}&nom_v={{ query_nom_v }}&nom_r={{ query_nom_r }}&mois={{ query_mois }}&annee={{ query_annee }}&page_r={{ page_obj_r.number }}">Précédent</a></li>
                     {% endif %}
-                    <li class="page-item active"><span class="page-link">Page {{ page_obj_v.number }}</span></li>
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj_v.number }} sur {{ page_obj_v.paginator.num_pages }}</span></li>
                     {% if page_obj_v.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.next_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Suivant</a></li>
+                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.next_page_number }}&nom_v={{ query_nom_v }}&nom_r={{ query_nom_r }}&mois={{ query_mois }}&annee={{ query_annee }}&page_r={{ page_obj_r.number }}">Suivant</a></li>
                     {% endif %}
                 </ul>
             </nav>
             {% endif %}
         </div>
-
 
         <div class="card card-shadow bg-white p-3 mb-5">
             <h5 class="font-weight-bold mb-3 text-danger">📤 Liste des Personnes ayant pris l'argent (Aides Accordées)</h5>
@@ -199,11 +202,11 @@
             <nav class="mt-3">
                 <ul class="pagination pagination-sm justify-content-center">
                     {% if page_obj_r.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.previous_page_number }}&nom={{ query_nom }}&annee={{ query_annee }}">Précédent</a></li>
+                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.previous_page_number }}&nom_v={{ query_nom_v }}&nom_r={{ query_nom_r }}&mois={{ query_mois }}&annee={{ query_annee }}&page_v={{ page_obj_v.number }}">Précédent</a></li>
                     {% endif %}
-                    <li class="page-item active"><span class="page-link">Page {{ page_obj_r.number }}</span></li>
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj_r.number }} sur {{ page_obj_r.paginator.num_pages }}</span></li>
                     {% if page_obj_r.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.next_page_number }}&nom={{ query_nom }}&annee={{ query_annee }}">Suivant</a></li>
+                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.next_page_number }}&nom_v={{ query_nom_v }}&nom_r={{ query_nom_r }}&mois={{ query_mois }}&annee={{ query_annee }}&page_v={{ page_obj_v.number }}">Suivant</a></li>
                     {% endif %}
                 </ul>
             </nav>

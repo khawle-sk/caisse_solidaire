@@ -14,32 +14,46 @@ def home(request):
     total_retraits = Transaction.objects.filter(type_transaction='RETRAIT', actif=True).aggregate(Sum('montant'))['montant__sum'] or 0
     solde_caisse = total_versements - total_retraits
 
-    # 2. Récupération de l'historique complet
-    transactions_list = Transaction.objects.filter(actif=True).order_by('-date_creation')
+    # 2. Séparation des flux de base
+    versements_list = Transaction.objects.filter(type_transaction='VERSEMENT', actif=True).order_by('-date_creation')
+    retraits_list = Transaction.objects.filter(type_transaction='RETRAIT', actif=True).order_by('-date_creation')
     
-    # 3. Système de filtres globaux cumulatifs (Cherche partout)
-    query_nom = request.GET.get('nom', '').strip()
+    # 3. Récupération des filtres spécifiques et cumulatifs
+    query_nom_v = request.GET.get('nom_v', '').strip() # Recherche Donateur
+    query_nom_r = request.GET.get('nom_r', '').strip() # Recherche Bénéficiaire
     query_mois = request.GET.get('mois', '').strip()
     query_annee = request.GET.get('annee', '').strip()
 
-    if query_nom:
-        # 🌟 FILTRE GLOBAL : Cherche le nom que ce soit un Donateur ou un Bénéficiaire
-        transactions_list = transactions_list.filter(commentaire__icontains=query_nom)
+    # Application des filtres spécifiques sur les Cotisations (Section Donateurs)
+    if query_nom_v:
+        versements_list = versements_list.filter(commentaire__icontains=query_nom_v)
     if query_mois:
-        transactions_list = transactions_list.filter(mois_couverts__icontains=query_mois)
+        versements_list = versements_list.filter(mois_couverts__icontains=query_mois)
     if query_annee:
-        transactions_list = transactions_list.filter(annee_concernee=query_annee)
+        versements_list = versements_list.filter(annee_concernee=query_annee)
 
-    # 4. Pagination stricte (15 lignes par page)
-    paginator = Paginator(transactions_list, 15)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    # Application des filtres spécifiques sur les Aides (Section Bénéficiaires)
+    if query_nom_r:
+        retraits_list = retraits_list.filter(commentaire__icontains=query_nom_r)
+    if query_annee:
+        retraits_list = retraits_list.filter(date_creation__year=query_annee)
+
+    # 4. Doubles Paginations Indépendantes (15 par page par défaut)
+    page_versements = request.GET.get('page_v', 1)
+    paginator_v = Paginator(versements_list, 15)
+    page_obj_v = paginator_v.get_page(page_versements)
+
+    page_retraits = request.GET.get('page_r', 1)
+    paginator_r = Paginator(retraits_list, 15)
+    page_obj_r = paginator_r.get_page(page_retraits)
 
     context = {
         'solde_caisse': solde_caisse,
-        'page_obj': page_obj,
+        'page_obj_v': page_obj_v,
+        'page_obj_r': page_obj_r,
         'mois_choices': Transaction.MOIS_CHOICES,
-        'query_nom': query_nom,
+        'query_nom_v': query_nom_v,
+        'query_nom_r': query_nom_r,
         'query_mois': query_mois,
         'query_annee': query_annee,
     }
