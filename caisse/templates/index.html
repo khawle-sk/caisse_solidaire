@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion - Caisse Solidaire</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/tailwind.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar { margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .card-shadow { box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: none; border-radius: 10px; }
-        .badge { padding: 8px 12px; font-size: 0.85rem; border-radius: 20px; }
-        .table th { border-top: none; }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .navbar { margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card-shadow { box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: none; border-radius: 12px; }
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; }
+        .form-section { background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .checkbox-group { max-height: 120px; overflow-y: auto; border: 1px solid #ced4da; padding: 10px; border-radius: 5px; background: #fff; }
     </style>
 </head>
 <body>
@@ -19,9 +19,11 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand font-weight-bold" href="?">💰 Caisse Solidaire</a>
-            <div class="navbar-nav ml-auto">
-                <a class="btn btn-outline-light btn-sm" href="/admin" target="_blank">⚙️ Espace Administration</a>
-            </div>
+            <span class="navbar-text text-light mr-3">Bonjour, <strong>{{ request.user.username }}</strong></span>
+            <form action="{% url 'logout' %}" method="POST" class="form-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm">Se déconnecter</button>
+            </form>
         </div>
     </nav>
 
@@ -29,23 +31,89 @@
 
         <div class="card text-white bg-success mb-4 card-shadow">
             <div class="card-body text-center py-4">
-                <h5 class="card-title text-uppercase tracking-wide" style="opacity: 0.9; font-size: 0.9rem;">Total Disponible dans la Caisse</h5>
-                <h1 class="display-4 font-weight-bold my-2">{{ solde_caisse }} MRU</h1>
-                <p class="card-text small mb-0" style="opacity: 0.8;">Mise à jour en temps réel (Cotisations actives − Aides accordées)</p>
+                <h5 class="text-uppercase tracking-wide mb-1" style="opacity: 0.9; font-size: 0.9rem;">Total Actuel en Caisse</h5>
+                <h1 class="display-3 font-weight-bold my-2">{{ solde_caisse }} MRU</h1>
+                <p class="small mb-0" style="opacity: 0.8;">Calculé automatiquement (Cotisations − Aides distribuées)</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-section card-shadow">
+                    <h5 class="font-weight-bold text-primary mb-3">📥 Enregistrer une Cotisation</h5>
+                    <form method="POST" action="{% url 'ajouter_don' %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Sélectionner le Membre :</label>
+                            <select name="membre_id" class="form-control" required>
+                                <option value="">-- Choisir un membre --</option>
+                                {% for m in membres %}
+                                    <option value="{{ m.id }}">{{ m.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold small">Montant (MRU) :</label>
+                                    <input type="number" name="montant" class="form-control" placeholder="Ex: 200" required>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold small">Année :</label>
+                                    <input type="number" name="annee" class="form-control" value="2026" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Mois couverts (100 MRU / mois) :</label>
+                            <div class="checkbox-group">
+                                {% for code, nom_mois in mois_choices %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="mois_selectionnes" value="{{ code }}" id="mois_{{ code }}">
+                                    <label class="form-check-label small" for="mois_{{ code }}">{{ nom_mois }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block font-weight-bold">Valider la Cotisation</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="form-section card-shadow">
+                    <h5 class="font-weight-bold text-danger mb-3">📤 Accorder une Aide (Retrait)</h5>
+                    <form method="POST" action="{% url 'enregistrer_aide' %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Nom du Bénéficiaire :</label>
+                            <input type="text" name="nom" class="form-control" placeholder="Nom de la personne aidée" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Montant à donner (MRU) :</label>
+                            <input type="number" name="montant" class="form-control" placeholder="Ce montant sera déduit du total" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Cause de l'aide / Description :</label>
+                            <textarea name="cause" class="form-control" rows="3" placeholder="Ex: Frais médicaux, Urgence familiale..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger btn-block font-weight-bold">Enregistrer & Déduire du Solde</button>
+                    </form>
+                </div>
             </div>
         </div>
 
         <div class="card mb-4 p-4 card-shadow bg-white">
-            <h5 class="font-weight-bold mb-3 text-secondary">🔍 Filtres de recherche</h5>
+            <h5 class="font-weight-bold mb-3 text-secondary">🔍 Filtres de recherche en temps réel</h5>
             <form method="GET" action="" class="row align-items-end">
-                
                 <div class="col-md-4 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Rechercher par Nom :</label>
-                    <input type="text" name="nom" class="form-control" placeholder="Ex: Mohamed..." value="{{ query_nom }}">
+                    <label class="form-label font-weight-bold small text-muted">Par Nom de membre :</label>
+                    <input type="text" name="nom" class="form-control" placeholder="Saisir un nom..." value="{{ query_nom }}">
                 </div>
-                
                 <div class="col-md-3 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Filtrer par Mois :</label>
+                    <label class="form-label font-weight-bold small text-muted">Par Mois cotisé :</label>
                     <select name="mois" class="form-control">
                         <option value="">-- Tous les mois --</option>
                         {% for code, nom_mois in mois_choices %}
@@ -53,35 +121,30 @@
                         {% endfor %}
                     </select>
                 </div>
-
                 <div class="col-md-2 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Filtrer par Année :</label>
+                    <label class="form-label font-weight-bold small text-muted">Par Année :</label>
                     <input type="number" name="annee" class="form-control" placeholder="Ex: 2026" value="{{ query_annee }}">
                 </div>
-
-                <div class="col-md-3 d-flex gap-2 mb-md-0">
-                    <button type="submit" class="btn btn-primary font-weight-bold flex-grow-1 mr-2">Filtrer</button>
-                    <a href="?" class="btn btn-light border font-weight-bold">Réinitialiser</a>
+                <div class="col-md-3 d-flex mb-md-0">
+                    <button type="submit" class="btn btn-secondary font-weight-bold flex-grow-1 mr-2">Filtrer</button>
+                    <a href="?" class="btn btn-light border font-weight-bold">Effacer</a>
                 </div>
             </form>
         </div>
 
         <div class="card card-shadow bg-white p-3 mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="font-weight-bold mb-0 text-secondary">📋 Historique des mouvements</h5>
-                <span class="badge badge-light border text-muted">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
-            </div>
-            
+            <h5 class="font-weight-bold mb-3 text-secondary">📋 Historique complet des transactions</h5>
             <div class="table-responsive">
-                <table class="table table-hover border-bottom mb-0">
+                <table class="table table-hover mb-0">
                     <thead class="thead-light">
                         <tr>
                             <th>Type</th>
-                            <th>Bénéficiaire / Membre</th>
+                            <th>Membre / Détails</th>
                             <th>Montant</th>
                             <th>Mois Couverts</th>
                             <th>Année</th>
-                            <th>Date & Heure</th>
+                            <th>Date</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -96,29 +159,28 @@
                             </td>
                             <td class="align-middle">
                                 {% if t.membre %}
-                                    <strong class="text-dark">{{ t.membre.nom }}</strong>
+                                    <strong>{{ t.membre.nom }}</strong>
                                 {% else %}
-                                    <span class="text-secondary italic">{{ t.commentaire }}</span>
+                                    <span class="text-secondary font-italic">{{ t.commentaire }}</span>
                                 {% endif %}
                             </td>
-                            <td class="align-middle font-weight-bold text-dark">
+                            <td class="align-middle font-weight-bold">
                                 {% if t.type_transaction == 'VERSEMENT' %}+{% else %}-{% endif %}{{ t.montant }} MRU
                             </td>
-                            <td class="align-middle text-secondary">
-                                {{ t.mois_couverts|default:"—" }}
-                            </td>
-                            <td class="align-middle text-secondary">
-                                {{ t.annee_concernee|default:"—" }}
-                            </td>
-                            <td class="align-middle text-muted">
-                                <small>{{ t.date_creation|date:"d/m/Y H:i" }}</small>
+                            <td class="align-middle text-muted">{{ t.mois_couverts|default:"—" }}</td>
+                            <td class="align-middle text-muted">{{ t.annee_concernee|default:"—" }}</td>
+                            <td class="align-middle text-muted"><small>{{ t.date_creation|date:"d/m/Y H:i" }}</small></td>
+                            <td class="align-middle">
+                                {% if t.type_transaction == 'RETRAIT' %}
+                                    <a href="{% url 'telecharger_pdf' t.id %}" class="btn btn-sm btn-outline-danger font-weight-bold">📄 Reçu PDF</a>
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-5">
-                                🏜️ Aucune transaction ne correspond à vos critères de recherche.
-                            </td>
+                            <td colspan="7" class="text-center text-muted py-4">Aucun enregistrement ne correspond.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -127,42 +189,25 @@
         </div>
 
         {% if page_obj.has_other_pages %}
-        <nav aria-label="Navigation des pages" class="mt-4 mb-5">
-            <ul class="pagination justify-content-center shadow-sm rounded">
-                
+        <nav class="mt-4 mb-5">
+            <ul class="pagination justify-content-center">
                 {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Précédent</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Précédent</a></li>
                 {% endif %}
-
                 {% for num in page_obj.paginator.page_range %}
                     {% if page_obj.number == num %}
                         <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                     {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ num }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">{{ num }}</a>
-                        </li>
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">{{ num }}</a></li>
                     {% endif %}
                 {% endfor %}
-
                 {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Suivant</a>
-                    </li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Suivant</a></li>
                 {% endif %}
-
             </ul>
         </nav>
         {% endif %}
 
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
