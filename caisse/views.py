@@ -1,42 +1,56 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
-from .models import MoisBudget, Cotisation, AideBeneficiaire
+from .models import Membre, Transaction
 from django.db.models import Sum
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from django.shortcuts import render, redirect
+
+from django.core.paginator import Paginator
+
 
 @login_required(login_url='login')
 def home(request):
-    mois_actif = MoisBudget.objects.filter(est_cloture=False).first()
-    cotisations = []
-    total_dons = 0
-    aide = None
+    # 1. Calcul du solde total dynamique de la caisse (Transactions actives uniquement)
+    total_versements = Transaction.objects.filter(type_transaction='VERSEMENT', actif=True).aggregate(Sum('montant'))['montant__sum'] or 0
+    total_retraits = Transaction.objects.filter(type_transaction='RETRAIT', actif=True).aggregate(Sum('montant'))['montant__sum'] or 0
+    solde_caisse = total_versements - total_retraits
 
-    if mois_actif:
-        cotisations = mois_actif.cotisations.all().order_by('-id')
-        total_dons = cotisations.aggregate(Sum('montant'))['montant__sum'] or 0
-        aide = getattr(mois_actif, 'aide', None)
+    # 2. Récupération de toutes les transactions actives
+    transactions_list = Transaction.objects.filter(actif=True).order_by('-date_creation')
+    
+    # 3. Système de RECHERCHE MULTI-CRITÈRES SIMULTANÉS
+    query_nom = request.GET.get('nom', '').strip()
+    query_mois = request.GET.get('mois', '').strip()
+    query_annee = request.GET.get('annee', '').strip()
 
-    mois_passes = MoisBudget.objects.filter(est_cloture=True).select_related('aide').order_by('-cree_le')
+    if query_nom:
+        # Recherche par le nom du membre (insensible à la casse)
+        transactions_list = transactions_list.filter(membre__nom__icontains=query_nom)
+    if query_mois:
+        # Recherche si le mois est inclus dans la liste des mois couverts
+        transactions_list = transactions_list.filter(mois_couverts__icontains=query_mois)
+    if query_annee:
+        # Recherche par année exacte
+        transactions_list = transactions_list.filter(annee_concernee=query_annee)
+
+    # 4. Système de PAGINATION (15 transactions par page)
+    paginator = Paginator(transactions_list, 15)
+    page_number = request.get_full_path().split('page=')[-1] if 'page=' in request.get_full_path() else 1
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'mois_actif': mois_actif,
-        'cotisations': cotisations,
-        'total_dons': total_dons,
-        'aide': aide,
-        'mois_passes': mois_passes,
+        'solde_caisse': solde_caisse,
+        'page_obj': page_obj,             # Contient les 15 transactions de la page courante
+        'mois_choices': Transaction.MOIS_CHOICES, # Pour afficher la liste dans le select du filtre
+        # On renvoie les valeurs pour garder les filtres affichés à l'écran après la recherche
+        'query_nom': query_nom,
+        'query_mois': query_mois,
+        'query_annee': query_annee,
     }
-    return render(request, 'index.html', context)
-
-# 1. Créer le mois depuis le site
-@login_required(login_url='login')
-def CreerMois(request):
-    if request.method == 'POST':
-        nom_mois = request.POST.get('nom_mois')
-        if not MoisBudget.objects.filter(est_cloture=False).exists():
-            MoisBudget.objects.create(nom=nom_mois)
-    return redirect('home')
+    return render(request, 'caisse/home.html', context)
 
 # 2. NOUVEAU : Ajouter un don depuis le site
 @login_required(login_url='login')

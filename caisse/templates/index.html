@@ -3,155 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion de Caisse Solidaire</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Gestion - Caisse Solidaire</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/tailwind.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card-shadow { box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: none; border-radius: 10px; }
+        .badge { padding: 8px 12px; font-size: 0.85rem; border-radius: 20px; }
+        .table th { border-top: none; }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<body>
 
-    <nav class="bg-blue-600 text-white shadow-lg p-4">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-wide">🪙 CaisseSolidaire</h1>
-            <div class="flex items-center gap-3">
-                <span class="text-xs bg-blue-700 px-3 py-1.5 rounded-full font-semibold">👤 {{ user.username }}</span>
-                <form action="{% url 'logout' %}" method="POST" class="inline">
-                    {% csrf_token %}
-                    <button type="submit" class="text-xs border border-white hover:bg-white hover:text-blue-600 px-3 py-1.5 rounded-full transition font-medium">
-                        Déconnexion
-                    </button>
-                </form>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand font-weight-bold" href="?">💰 Caisse Solidaire</a>
+            <div class="navbar-nav ml-auto">
+                <a class="btn btn-outline-light btn-sm" href="/admin" target="_blank">⚙️ Espace Administration</a>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-6">
+    <div class="container">
 
-        {% if mois_actif %}
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-            <div class="flex justify-between items-center border-b pb-3">
-                <h2 class="text-2xl font-bold text-gray-900">{{ mois_actif.nom }}</h2>
-                <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded shadow-sm">En cours</span>
+        <div class="card text-white bg-success mb-4 card-shadow">
+            <div class="card-body text-center py-4">
+                <h5 class="card-title text-uppercase tracking-wide" style="opacity: 0.9; font-size: 0.9rem;">Total Disponible dans la Caisse</h5>
+                <h1 class="display-4 font-weight-bold my-2">{{ solde_caisse }} MRU</h1>
+                <p class="card-text small mb-0" style="opacity: 0.8;">Mise à jour en temps réel (Cotisations actives − Aides accordées)</p>
             </div>
+        </div>
 
-            <div class="bg-blue-50 p-4 rounded-xl">
-                <p class="text-sm text-blue-600 font-medium">Total Collecté ce mois</p>
-                <p class="text-3xl font-black text-blue-900">{{ total_dons }} €</p>
-            </div>
-
-            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <h3 class="font-bold text-gray-700 text-sm mb-3">🪙 Enregistrer un nouveau don :</h3>
-                <form action="{% url 'ajouter_don' mois_actif.id %}" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {% csrf_token %}
-                    <input type="text" name="nom_donateur" placeholder="Nom de la personne" required 
-                           class="p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                    <input type="number" step="0.01" name="montant" placeholder="Montant (€)" required 
-                           class="p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-lg transition py-2">
-                        ➕ Sauvegarder le Don
-                    </button>
-                </form>
-            </div>
-
-            <div>
-                <h3 class="font-bold text-lg mb-2 text-gray-700">Historique des dons reçus :</h3>
-                <div class="overflow-x-auto rounded-lg border border-gray-100">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-100 text-gray-600 text-sm">
-                            <tr>
-                                <th class="p-3">Donateur</th>
-                                <th class="p-3 text-right">Montant</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            {% for cotisation in cotisations %}
-                            <tr class="hover:bg-gray-50">
-                                <td class="p-3 font-medium">{{ cotisation.nom_donateur }}</td>
-                                <td class="p-3 text-right font-bold text-green-600">+ {{ cotisation.montant }} €</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="2" class="p-3 text-center text-gray-400">Aucun don enregistré pour le moment. Utilisez le formulaire ci-dessus.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {% if not aide %}
-            <div class="bg-yellow-50 p-5 rounded-xl border border-yellow-100">
-                <h3 class="font-bold text-yellow-800 text-lg mb-1">Clôturer le mois et Générer le PDF</h3>
-                <p class="text-sm text-yellow-700 mb-4">Cela va verrouiller le mois, enregistrer le bénéficiaire de l'aide et envoyer le dossier en archive.</p>
+        <div class="card mb-4 p-4 card-shadow bg-white">
+            <h5 class="font-weight-bold mb-3 text-secondary">🔍 Filtres de recherche</h5>
+            <form method="GET" action="" class="row align-items-end">
                 
-                <form action="{% url 'enregistrer_aide' mois_actif.id %}" method="POST" class="space-y-3">
-                    {% csrf_token %}
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase">Nom du bénéficiaire</label>
-                        <input type="text" name="nom" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase">Montant accordé (€)</label>
-                        <input type="number" step="0.01" name="montant" value="{{ total_dons }}" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase">Cause / Description de l'aide</label>
-                        <textarea name="cause" rows="3" placeholder="Pourquoi aide-t-on cette personne ?" required class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"></textarea>
-                    </div>
-                    <button type="submit" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-4 rounded-lg transition shadow">
-                        Créer le PDF & Verrouiller le mois
-                    </button>
-                </form>
-            </div>
-            {% endif %}
+                <div class="col-md-4 form-group mb-2 mb-md-0">
+                    <label class="form-label font-weight-bold small text-muted">Rechercher par Nom :</label>
+                    <input type="text" name="nom" class="form-control" placeholder="Ex: Mohamed..." value="{{ query_nom }}">
+                </div>
+                
+                <div class="col-md-3 form-group mb-2 mb-md-0">
+                    <label class="form-label font-weight-bold small text-muted">Filtrer par Mois :</label>
+                    <select name="mois" class="form-control">
+                        <option value="">-- Tous les mois --</option>
+                        {% for code, nom_mois in mois_choices %}
+                            <option value="{{ code }}" {% if query_mois == code %}selected{% endif %}>{{ nom_mois }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 form-group mb-2 mb-md-0">
+                    <label class="form-label font-weight-bold small text-muted">Filtrer par Année :</label>
+                    <input type="number" name="annee" class="form-control" placeholder="Ex: 2026" value="{{ query_annee }}">
+                </div>
+
+                <div class="col-md-3 d-flex gap-2 mb-md-0">
+                    <button type="submit" class="btn btn-primary font-weight-bold flex-grow-1 mr-2">Filtrer</button>
+                    <a href="?" class="btn btn-light border font-weight-bold">Réinitialiser</a>
+                </div>
+            </form>
         </div>
-        {% else %}
-        <div class="bg-white p-6 rounded-2xl shadow-sm text-center border border-gray-200">
-            <span class="text-3xl">📅</span>
-            <p class="text-gray-700 font-medium mt-2">Aucune caisse active n'est ouverte.</p>
+
+        <div class="card card-shadow bg-white p-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="font-weight-bold mb-0 text-secondary">📋 Historique des mouvements</h5>
+                <span class="badge badge-light border text-muted">Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}</span>
+            </div>
             
-            <div class="max-w-md mx-auto mt-4 bg-gray-50 p-4 rounded-xl border text-left">
-                <h3 class="font-bold text-gray-800 text-sm mb-2">Ouvrir une nouvelle caisse pour démarrer :</h3>
-                <form action="{% url 'creer_mois' %}" method="POST" class="flex gap-2">
-                    {% csrf_token %}
-                    <input type="text" name="nom_mois" placeholder="Ex: Juillet 2026" required 
-                           class="flex-1 p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2 rounded-lg transition">
-                        Ouvrir la caisse
-                    </button>
-                </form>
+            <div class="table-responsive">
+                <table class="table table-hover border-bottom mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Type</th>
+                            <th>Bénéficiaire / Membre</th>
+                            <th>Montant</th>
+                            <th>Mois Couverts</th>
+                            <th>Année</th>
+                            <th>Date & Heure</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in page_obj %}
+                        <tr>
+                            <td class="align-middle">
+                                {% if t.type_transaction == 'VERSEMENT' %}
+                                    <span class="badge badge-success">Cotisation (+)</span>
+                                {% else %}
+                                    <span class="badge badge-danger">Aide Accordée (-)</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                {% if t.membre %}
+                                    <strong class="text-dark">{{ t.membre.nom }}</strong>
+                                {% else %}
+                                    <span class="text-secondary italic">{{ t.commentaire }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle font-weight-bold text-dark">
+                                {% if t.type_transaction == 'VERSEMENT' %}+{% else %}-{% endif %}{{ t.montant }} MRU
+                            </td>
+                            <td class="align-middle text-secondary">
+                                {{ t.mois_couverts|default:"—" }}
+                            </td>
+                            <td class="align-middle text-secondary">
+                                {{ t.annee_concernee|default:"—" }}
+                            </td>
+                            <td class="align-middle text-muted">
+                                <small>{{ t.date_creation|date:"d/m/Y H:i" }}</small>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                🏜️ Aucune transaction ne correspond à vos critères de recherche.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
+
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Navigation des pages" class="mt-4 mb-5">
+            <ul class="pagination justify-content-center shadow-sm rounded">
+                
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Précédent</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Suivant</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+                {% endif %}
+
+            </ul>
+        </nav>
         {% endif %}
 
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 class="text-xl font-bold text-gray-900 mb-1">🗄️ Archives de la Caisse</h2>
-            <p class="text-sm text-gray-500 mb-4">Historique transparent des mois passés, des bénéficiaires et des descriptions.</p>
-            
-            <div class="space-y-4">
-                {% for mois in mois_passes %}
-                <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div class="space-y-1 max-w-xl">
-                        <div class="flex items-center gap-2">
-                            <span class="font-black text-gray-900 text-lg">{{ mois.nom }}</span>
-                            <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded font-bold">{{ mois.aide.montant_accorde }} €</span>
-                        </div>
-                        <p class="text-sm text-gray-700">
-                            <span class="font-bold text-blue-600">Bénéficiaire :</span> {{ mois.aide.nom_beneficiaire }}
-                        </p>
-                        <p class="text-xs text-gray-500 italic bg-white p-2 rounded border border-gray-100">
-                            " {{ mois.aide.cause }} "
-                        </p>
-                    </div>
-                    
-                    <a href="{% url 'telecharger_pdf' mois.aide.id %}" class="w-full md:w-auto text-center inline-flex justify-center items-center bg-gray-800 hover:bg-black text-white text-xs font-bold py-2.5 px-4 rounded-lg transition shadow-sm whitespace-nowrap">
-                        📄 Télécharger le PDF
-                    </a>
-                </div>
-                {% empty %}
-                <p class="text-sm text-gray-400 text-center py-4">Aucune archive disponible pour le moment.</p>
-                {% endfor %}
-            </div>
-        </div>
+    </div>
 
-    </main>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

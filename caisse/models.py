@@ -1,36 +1,41 @@
-from django.db import models
 
-# Create your models here.
 from django.db import models
 from django.utils import timezone
 
-class MoisBudget(models.Model):
-    """Représente un mois de collecte (ex: 'Juillet 2026')"""
-    nom = models.CharField(max_length=50, verbose_name="Mois et Année (ex: Juillet 2026)")
-    cree_le = models.DateTimeField(default=timezone.now)
-    est_cloture = models.BooleanField(default=False, verbose_name="Mois clôturé ?")
+class Membre(models.Model):
+    nom = models.CharField(max_length=150, verbose_name="Nom complet")
+    telephone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone")
+    date_inscription = models.DateField(default=timezone.now)
 
     def __str__(self):
-        statut = "Clôturé" if self.est_cloture else "En cours"
-        return f"{self.nom} ({statut})"
+        return self.nom
 
-class Cotisation(models.Model):
-    """Table pour enregistrer l'argent qui rentre (les donateurs)"""
-    mois = models.ForeignKey(MoisBudget, on_delete=models.CASCADE, related_name="cotisations")
-    nom_donateur = models.CharField(max_length=100, verbose_name="Nom du donateur")
-    montant = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Montant (€)")
-    date_don = models.DateField(default=timezone.now)
+class Transaction(models.Model):
+    TYPE_CHOICES = [
+        ('VERSEMENT', 'Versement (Cotisation)'),
+        ('RETRAIT', 'Retrait (Aide accordée)'),
+    ]
+    
+    MOIS_CHOICES = [
+        ('01', 'Janvier'), ('02', 'Février'), ('03', 'Mars'), ('04', 'Avril'),
+        ('05', 'Mai'), ('06', 'Juin'), ('07', 'Juillet'), ('08', 'Août'),
+        ('09', 'Septembre'), ('10', 'Octobre'), ('11', 'Novembre'), ('12', 'Décembre'),
+    ]
+
+    type_transaction = models.CharField(max_length=10, choices=TYPE_CHOICES, default='VERSEMENT')
+    membre = models.ForeignKey(Membre, on_delete=models.CASCADE, null=True, blank=True, related_name='transactions', verbose_name="Membre (si versement)")
+    montant = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Montant (MRU)")
+    date_creation = models.DateTimeField(default=timezone.now)
+    
+    # Pour la flexibilité des mois/années cotisés
+    annee_concernee = models.IntegerField(null=True, blank=True, verbose_name="Année concernée")
+    # On stocke les mois sous forme de texte séparé par des virgules (ex: "01,02,03" pour 3 mois)
+    mois_couverts = models.CharField(max_length=100, blank=True, null=True, verbose_name="Mois couverts (ex: Janvier, Février)")
+    
+    commentaire = models.TextField(blank=True, null=True, verbose_name="Détails / Bénéficiaire de l'aide")
+    actif = models.BooleanField(default=True, verbose_name="Transaction active (incluse dans le total)")
 
     def __str__(self):
-        return f"{self.nom_donateur} - {self.montant}€"
-
-class AideBeneficiaire(models.Model):
-    """Table pour l'argent qui sort (génère le PDF)"""
-    mois = models.OneToOneField(MoisBudget, on_delete=models.CASCADE, related_name="aide")
-    nom_beneficiaire = models.CharField(max_length=100, verbose_name="Nom du bénéficiaire")
-    montant_accorde = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Montant accordé (€)")
-    cause = models.TextField(verbose_name="Cause de l'aide")
-    cree_le = models.DateField(default=timezone.now)
-
-    def __str__(self):
-        return f"Aide pour {self.nom_beneficiaire}"
+        if self.type_transaction == 'VERSEMENT':
+            return f"Versement de {self.montant} MRU par {self.membre}"
+        return f"Retrait (Aide) de {self.montant} MRU - {self.commentaire[:30]}"

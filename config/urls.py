@@ -22,11 +22,5 @@ from caisse import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'),
-    path('creer-mois/', views.CreerMois, name='creer_mois'),
-    path('ajouter-don/<int:mois_id>/', views.AjouterDon, name='ajouter_don'), # <-- Nouvelle URL pour le don
-    path('login/', auth_views.LoginView.as_view(template_name='login.html', redirect_authenticated_user=True), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('aide/<int:mois_id>/', views.EnregistrerAide, name='enregistrer_aide'),
-    path('pdf/<int:aide_id>/', views.TelechargerPDF, name='telecharger_pdf'),
+ 
 ]
