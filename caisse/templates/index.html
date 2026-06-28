@@ -19,7 +19,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand font-weight-bold" href="?">💰 Caisse Solidaire</a>
-            <span class="navbar-text text-light mr-3">Bonjour, <strong>{{ request.user.username }}</strong></span>
+            <span class="navbar-text text-light mr-3">Utilisateur : <strong>{{ request.user.username }}</strong></span>
             <form action="{% url 'logout' %}" method="POST" class="form-inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-outline-danger btn-sm">Se déconnecter</button>
@@ -31,9 +31,9 @@
 
         <div class="card text-white bg-success mb-4 card-shadow">
             <div class="card-body text-center py-4">
-                <h5 class="text-uppercase tracking-wide mb-1" style="opacity: 0.9; font-size: 0.9rem;">Total Actuel en Caisse</h5>
+                <h5 class="text-uppercase tracking-wide mb-1" style="opacity: 0.9; font-size: 0.9rem;">Solde Total de la Caisse</h5>
                 <h1 class="display-3 font-weight-bold my-2">{{ solde_caisse }} MRU</h1>
-                <p class="small mb-0" style="opacity: 0.8;">Calculé automatiquement (Cotisations − Aides distribuées)</p>
+                <p class="small mb-0" style="opacity: 0.8;">Calculé en direct (Cotisations enregistrées − Aides accordées)</p>
             </div>
         </div>
 
@@ -44,30 +44,15 @@
                     <form method="POST" action="{% url 'ajouter_don' %}">
                         {% csrf_token %}
                         <div class="form-group">
-                            <label class="font-weight-bold small">Sélectionner le Membre :</label>
-                            <select name="membre_id" class="form-control" required>
-                                <option value="">-- Choisir un membre --</option>
-                                {% for m in membres %}
-                                    <option value="{{ m.id }}">{{ m.nom }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label class="font-weight-bold small">Montant (MRU) :</label>
-                                    <input type="number" name="montant" class="form-control" placeholder="Ex: 200" required>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label class="font-weight-bold small">Année :</label>
-                                    <input type="number" name="annee" class="form-control" value="2026" required>
-                                </div>
-                            </div>
+                            <label class="font-weight-bold small">Nom du Donateur :</label>
+                            <input type="text" name="nom_donateur" class="form-control" placeholder="Entrer le nom complet" required>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold small">Mois couverts (100 MRU / mois) :</label>
+                            <label class="font-weight-bold small">Année :</label>
+                            <input type="number" name="annee" class="form-control" value="2026" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold small">Sélectionner le ou les mois (100 MRU / mois) :</label>
                             <div class="checkbox-group">
                                 {% for code, nom_mois in mois_choices %}
                                 <div class="form-check">
@@ -92,28 +77,28 @@
                             <input type="text" name="nom" class="form-control" placeholder="Nom de la personne aidée" required>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold small">Montant à donner (MRU) :</label>
-                            <input type="number" name="montant" class="form-control" placeholder="Ce montant sera déduit du total" required>
+                            <label class="font-weight-bold small">Montant accordé (MRU) :</label>
+                            <input type="number" name="montant" class="form-control" placeholder="Sera retiré de la caisse" required>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold small">Cause de l'aide / Description :</label>
-                            <textarea name="cause" class="form-control" rows="3" placeholder="Ex: Frais médicaux, Urgence familiale..." required></textarea>
+                            <label class="font-weight-bold small">Motif / Description :</label>
+                            <textarea name="cause" class="form-control" rows="3" placeholder="Raison de l'aide..." required></textarea>
                         </div>
-                        <button type="submit" class="btn btn-danger btn-block font-weight-bold">Enregistrer & Déduire du Solde</button>
+                        <button type="submit" class="btn btn-danger btn-block font-weight-bold">Enregistrer & Déduire</button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <div class="card mb-4 p-4 card-shadow bg-white">
-            <h5 class="font-weight-bold mb-3 text-secondary">🔍 Filtres de recherche en temps réel</h5>
+        <div class="card mb-5 p-4 card-shadow bg-white">
+            <h5 class="font-weight-bold mb-3 text-secondary">🔍 Moteur de recherche et filtres</h5>
             <form method="GET" action="" class="row align-items-end">
                 <div class="col-md-4 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Par Nom de membre :</label>
-                    <input type="text" name="nom" class="form-control" placeholder="Saisir un nom..." value="{{ query_nom }}">
+                    <label class="form-label font-weight-bold small text-muted">Rechercher par Nom :</label>
+                    <input type="text" name="nom" class="form-control" placeholder="Taper un nom..." value="{{ query_nom }}">
                 </div>
                 <div class="col-md-3 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Par Mois cotisé :</label>
+                    <label class="form-label font-weight-bold small text-muted">Filtrer par Mois (Cotisations) :</label>
                     <select name="mois" class="form-control">
                         <option value="">-- Tous les mois --</option>
                         {% for code, nom_mois in mois_choices %}
@@ -122,7 +107,7 @@
                     </select>
                 </div>
                 <div class="col-md-2 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Par Année :</label>
+                    <label class="form-label font-weight-bold small text-muted">Filtrer par Année :</label>
                     <input type="number" name="annee" class="form-control" placeholder="Ex: 2026" value="{{ query_annee }}">
                 </div>
                 <div class="col-md-3 d-flex mb-md-0">
@@ -132,81 +117,98 @@
             </form>
         </div>
 
-        <div class="card card-shadow bg-white p-3 mb-4">
-            <h5 class="font-weight-bold mb-3 text-secondary">📋 Historique complet des transactions</h5>
+        <div class="card card-shadow bg-white p-3 mb-5">
+            <h5 class="font-weight-bold mb-3 text-primary">📥 Liste des Personnes ayant participé (Cotisations)</h5>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="thead-light">
                         <tr>
-                            <th>Type</th>
-                            <th>Membre / Détails</th>
-                            <th>Montant</th>
+                            <th>Donateur</th>
+                            <th>Montant Versé</th>
                             <th>Mois Couverts</th>
                             <th>Année</th>
-                            <th>Date</th>
-                            <th>Action</th>
+                            <th>Date d'opération</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for t in page_obj %}
+                        {% for t in page_obj_v %}
                         <tr>
-                            <td class="align-middle">
-                                {% if t.type_transaction == 'VERSEMENT' %}
-                                    <span class="badge badge-success">Cotisation (+)</span>
-                                {% else %}
-                                    <span class="badge badge-danger">Aide Accordée (-)</span>
-                                {% endif %}
-                            </td>
-                            <td class="align-middle">
-                                {% if t.membre %}
-                                    <strong>{{ t.membre.nom }}</strong>
-                                {% else %}
-                                    <span class="text-secondary font-italic">{{ t.commentaire }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="align-middle font-weight-bold">
-                                {% if t.type_transaction == 'VERSEMENT' %}+{% else %}-{% endif %}{{ t.montant }} MRU
-                            </td>
+                            <td class="align-middle font-weight-bold text-dark">{{ t.commentaire }}</td>
+                            <td class="align-middle text-success font-weight-bold">+{{ t.montant }} MRU</td>
                             <td class="align-middle text-muted">{{ t.mois_couverts|default:"—" }}</td>
                             <td class="align-middle text-muted">{{ t.annee_concernee|default:"—" }}</td>
                             <td class="align-middle text-muted"><small>{{ t.date_creation|date:"d/m/Y H:i" }}</small></td>
-                            <td class="align-middle">
-                                {% if t.type_transaction == 'RETRAIT' %}
-                                    <a href="{% url 'telecharger_pdf' t.id %}" class="btn btn-sm btn-outline-danger font-weight-bold">📄 Reçu PDF</a>
-                                {% else %}
-                                    <span class="text-muted small">—</span>
-                                {% endif %}
-                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Aucun enregistrement ne correspond.</td>
+                            <td colspan="5" class="text-center text-muted py-3">Aucune cotisation enregistrée pour ces critères.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
+            {% if page_obj_v.has_other_pages %}
+            <nav class="mt-3">
+                <ul class="pagination pagination-sm justify-content-center">
+                    {% if page_obj_v.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.previous_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Précédent</a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj_v.number }}</span></li>
+                    {% if page_obj_v.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.next_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Suivant</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         </div>
 
-        {% if page_obj.has_other_pages %}
-        <nav class="mt-4 mb-5">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Précédent</a></li>
-                {% endif %}
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">{{ num }}</a></li>
+
+        <div class="card card-shadow bg-white p-3 mb-5">
+            <h5 class="font-weight-bold mb-3 text-danger">📤 Liste des Personnes ayant pris l'argent (Aides Accordées)</h5>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Bénéficiaire / Description</th>
+                            <th>Montant Reçu</th>
+                            <th>Date d'opération</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in page_obj_r %}
+                        <tr>
+                            <td class="align-middle font-weight-bold text-dark">{{ t.commentaire }}</td>
+                            <td class="align-middle text-danger font-weight-bold">-{{ t.montant }} MRU</td>
+                            <td class="align-middle text-muted"><small>{{ t.date_creation|date:"d/m/Y H:i" }}</small></td>
+                            <td class="align-middle">
+                                <a href="{% url 'telecharger_pdf' t.id %}" class="btn btn-sm btn-outline-danger font-weight-bold">📄 Reçu PDF</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">Aucune aide enregistrée pour ces critères.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if page_obj_r.has_other_pages %}
+            <nav class="mt-3">
+                <ul class="pagination pagination-sm justify-content-center">
+                    {% if page_obj_r.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.previous_page_number }}&nom={{ query_nom }}&annee={{ query_annee }}">Précédent</a></li>
                     {% endif %}
-                {% endfor %}
-                {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&nom={{ query_nom }}&mois={{ query_mois }}&annee={{ query_annee }}">Suivant</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
+                    <li class="page-item active"><span class="page-link">Page {{ page_obj_r.number }}</span></li>
+                    {% if page_obj_r.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.next_page_number }}&nom={{ query_nom }}&annee={{ query_annee }}">Suivant</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
 
     </div>
 </body>
