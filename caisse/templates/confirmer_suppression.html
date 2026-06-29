@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmer la suppression</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { background-color: #f4f6f9; display: flex; align-items: center; justify-content: center; height: 100vh; }
+        .confirm-card { max-width: 500px; width: 100%; border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); background: white; padding: 30px; text-align: center; }
+        .warn-icon { font-size: 4rem; color: #dc3545; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <div class="confirm-card">
+        <div class="warn-icon">⚠️</div>
+        <h3 class="font-weight-bold text-dark mt-3">Confirmation requise</h3>
+        <p class="text-muted my-3">Êtes-vous sûr de vouloir supprimer définitivement cet enregistrement ? Cette action modifiera instantanément le solde de la caisse.</p>
+        
+        <div class="card bg-light p-3 border-0 text-left rounded-lg mb-4">
+            <span class="small font-weight-bold text-uppercase text-secondary">Détails de l'opération :</span>
+            <span class="font-weight-bold text-dark mt-1">{{ transaction.commentaire }}</span>
+            <span class="font-weight-bold {% if transaction.type_transaction == 'VERSEMENT' %}text-success{% else %}text-danger{% endif %} mt-1">
+                {% if transaction.type_transaction == 'VERSEMENT' %}+{% else %}-{% endif %}{{ transaction.montant }} MRU
+            </span>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-block font-weight-bold py-2 rounded-pill">Oui, supprimer définitivement</button>
+            <a href="{% url 'home' %}" class="btn btn-light btn-block text-secondary font-weight-bold mt-2 py-2 rounded-pill">Annuler et retourner</a>
+        </form>
+    </div>
+</body>
+</html>

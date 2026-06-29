@@ -18,25 +18,29 @@ def home(request):
     versements_list = Transaction.objects.filter(type_transaction='VERSEMENT', actif=True).order_by('-date_creation')
     retraits_list = Transaction.objects.filter(type_transaction='RETRAIT', actif=True).order_by('-date_creation')
     
-    # 3. Récupération des filtres spécifiques et cumulatifs
-    query_nom_v = request.GET.get('nom_v', '').strip() # Recherche Donateur
-    query_nom_r = request.GET.get('nom_r', '').strip() # Recherche Bénéficiaire
+    # 3. Récupération des filtres par section distincte
+    query_nom_v = request.GET.get('nom_v', '').strip()
     query_mois = request.GET.get('mois', '').strip()
-    query_annee = request.GET.get('annee', '').strip()
+    query_annee_v = request.GET.get('annee_v', '').strip()
 
-    # Application des filtres spécifiques sur les Cotisations (Section Donateurs)
+    query_nom_r = request.GET.get('nom_r', '').strip()
+    query_annee_r = request.GET.get('annee_r', '').strip()
+
+    # Application des filtres sur les Cotisations (Section Donateurs)
     if query_nom_v:
         versements_list = versements_list.filter(commentaire__icontains=query_nom_v)
     if query_mois:
-        versements_list = versements_list.filter(mois_couverts__icontains=query_mois)
-    if query_annee:
-        versements_list = versements_list.filter(annee_concernee=query_annee)
+        # 🔥 Correction : On récupère le libellé en clair du mois pour la recherche textuelle
+        nom_mois_clair = dict(Transaction.MOIS_CHOICES).get(query_mois, query_mois)
+        versements_list = versements_list.filter(mois_couverts__icontains=nom_mois_clair)
+    if query_annee_v:
+        versements_list = versements_list.filter(annee_concernee=query_annee_v)
 
-    # Application des filtres spécifiques sur les Aides (Section Bénéficiaires)
+    # Application des filtres sur les Aides (Section Bénéficiaires)
     if query_nom_r:
         retraits_list = retraits_list.filter(commentaire__icontains=query_nom_r)
-    if query_annee:
-        retraits_list = retraits_list.filter(date_creation__year=query_annee)
+    if query_annee_r:
+        retraits_list = retraits_list.filter(date_creation__year=query_annee_r)
 
     # 4. Doubles Paginations Indépendantes (15 par page par défaut)
     page_versements = request.GET.get('page_v', 1)
@@ -47,6 +51,12 @@ def home(request):
     paginator_r = Paginator(retraits_list, 15)
     page_obj_r = paginator_r.get_page(page_retraits)
 
+    # Variables d'édition (si une modification est demandée)
+    edit_transaction = None
+    edit_id = request.GET.get('edit_id')
+    if edit_id:
+        edit_transaction = get_object_or_404(Transaction, id=edit_id, actif=True)
+
     context = {
         'solde_caisse': solde_caisse,
         'page_obj_v': page_obj_v,
@@ -55,13 +65,16 @@ def home(request):
         'query_nom_v': query_nom_v,
         'query_nom_r': query_nom_r,
         'query_mois': query_mois,
-        'query_annee': query_annee,
+        'query_annee_v': query_annee_v,
+        'query_annee_r': query_annee_r,
+        'edit_transaction': edit_transaction,
     }
     return render(request, 'index.html', context)
 
 @login_required(login_url='login')
 def AjouterDon(request):
     if request.method == 'POST':
+        transaction_id = request.POST.get('transaction_id')
         nom_donateur = request.POST.get('nom_donateur', '').strip()
         annee = request.POST.get('annee')
         mois_list = request.POST.getlist('mois_selectionnes')
@@ -69,35 +82,56 @@ def AjouterDon(request):
         if nom_donateur and mois_list:
             nb_mois = len(mois_list)
             montant_calcule = nb_mois * 100
-            
-            # Conversion des codes de mois en texte lisible (ex: Janvier, Février)
             mois_string = ", ".join([dict(Transaction.MOIS_CHOICES).get(m, m) for m in mois_list])
             
-            Transaction.objects.create(
-                type_transaction='VERSEMENT',
-                montant=montant_calcule,
-                annee_concernee=annee if annee else None,
-                mois_couverts=mois_string,
-                commentaire=f"Donateur: {nom_donateur}",
-                actif=True
-            )
+            if transaction_id: # Mode Modification
+                t = get_object_or_404(Transaction, id=transaction_id, type_transaction='VERSEMENT')
+                t.montant = montant_calcule
+                t.annee_concernee = annee if annee else None
+                t.mois_couverts = mois_string
+                t.commentaire = f"Donateur: {nom_donateur}"
+                t.save()
+            else: # Mode Création
+                Transaction.objects.create(
+                    type_transaction='VERSEMENT',
+                    montant=montant_calcule,
+                    annee_concernee=annee if annee else None,
+                    mois_couverts=mois_string,
+                    commentaire=f"Donateur: {nom_donateur}",
+                    actif=True
+                )
     return redirect('home')
 
 @login_required(login_url='login')
 def EnregistrerAide(request):
     if request.method == 'POST':
+        transaction_id = request.POST.get('transaction_id')
         beneficiaire = request.POST.get('nom', '').strip()
         montant = request.POST.get('montant')
         cause = request.POST.get('cause', '').strip()
         
         if beneficiaire and montant:
-            Transaction.objects.create(
-                type_transaction='RETRAIT',
-                montant=montant,
-                commentaire=f"Bénéficiaire: {beneficiaire} | Cause: {cause}",
-                actif=True
-            )
+            if transaction_id: # Mode Modification
+                t = get_object_or_404(Transaction, id=transaction_id, type_transaction='RETRAIT')
+                t.montant = montant
+                t.commentaire = f"Bénéficiaire: {beneficiaire} | Cause: {cause}"
+                t.save()
+            else: # Mode Création
+                Transaction.objects.create(
+                    type_transaction='RETRAIT',
+                    montant=montant,
+                    commentaire=f"Bénéficiaire: {beneficiaire} | Cause: {cause}",
+                    actif=True
+                )
     return redirect('home')
+
+@login_required(login_url='login')
+def ConfirmerSuppression(request, transaction_id):
+    transaction = get_object_or_404(Transaction, id=transaction_id, actif=True)
+    if request.method == 'POST':
+        transaction.delete() # Ou transaction.actif = False selon tes préférences
+        return redirect('home')
+    return render(request, 'confirmer_suppression.html', {'transaction': transaction})
 
 @login_required(login_url='login')
 def TelechargerPDF(request, transaction_id):

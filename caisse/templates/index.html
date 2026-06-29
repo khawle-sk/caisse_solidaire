@@ -10,8 +10,12 @@
         .navbar { margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .card-shadow { box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: none; border-radius: 12px; }
         .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; }
-        .form-section { background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .form-section { background: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 2px solid transparent; }
+        .form-section.editing { border-color: #ffc107; background-color: #fffdf5; }
         .checkbox-group { max-height: 120px; overflow-y: auto; border: 1px solid #ced4da; padding: 10px; border-radius: 5px; background: #fff; }
+        .action-btn { font-size: 1.1rem; text-decoration: none !important; margin: 0 4px; transition: opacity 0.2s; }
+        .action-btn:hover { opacity: 0.7; }
+        .filter-box { background: #fafafa; border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
@@ -39,90 +43,105 @@
 
         <div class="row">
             <div class="col-md-6">
-                <div class="form-section card-shadow">
-                    <h5 class="font-weight-bold text-primary mb-3">📥 Enregistrer une Cotisation</h5>
+                <div class="form-section card-shadow {% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' %}editing{% endif %}">
+                    <h5 class="font-weight-bold text-primary mb-3">
+                        {% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' %}✏️ Modifier la Cotisation{% else %}📥 Enregistrer une Cotisation{% endif %}
+                    </h5>
                     <form method="POST" action="{% url 'ajouter_don' %}">
                         {% csrf_token %}
+                        {% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' %}
+                            <input type="hidden" name="transaction_id" value="{{ edit_transaction.id }}">
+                        {% endif %}
                         <div class="form-group">
                             <label class="font-weight-bold small">Nom du Donateur :</label>
-                            <input type="text" name="nom_donateur" class="form-control" placeholder="Entrer le nom complet" required>
+                            <input type="text" name="nom_donateur" class="form-control" placeholder="Entrer le nom complet" required 
+                            value="{% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' %}{{ edit_transaction.commentaire|cut:'Donateur: ' }}{% endif %}">
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold small">Année :</label>
-                            <input type="number" name="annee" class="form-control" value="2026" required>
+                            <input type="number" name="annee" class="form-control" value="{% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' %}{{ edit_transaction.annee_concernee }}{% else %}2026{% endif %}" required>
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold small">Sélectionner le ou les mois (100 MRU / mois) :</label>
                             <div class="checkbox-group">
                                 {% for code, nom_mois in mois_choices %}
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="mois_selectionnes" value="{{ code }}" id="mois_{{ code }}">
+                                    <input class="form-check-input" type="checkbox" name="mois_selectionnes" value="{{ code }}" id="mois_{{ code }}"
+                                    {% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' and nom_mois in edit_transaction.mois_couverts %}checked{% endif %}>
                                     <label class="form-check-label small" for="mois_{{ code }}">{{ nom_mois }}</label>
                                 </div>
                                 {% endfor %}
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block font-weight-bold">Valider la Cotisation</button>
+                        <button type="submit" class="btn {% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' %}btn-warning text-dark{% else %}btn-primary{% endif %} btn-block font-weight-bold">
+                            {% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' %}Mettre à jour la Cotisation{% else %}Valider la Cotisation{% endif %}
+                        </button>
+                        {% if edit_transaction %}
+                            <a href="?" class="btn btn-light btn-sm btn-block border mt-2">Annuler la modification</a>
+                        {% endif %}
                     </form>
                 </div>
             </div>
 
             <div class="col-md-6">
-                <div class="form-section card-shadow">
-                    <h5 class="font-weight-bold text-danger mb-3">📤 Accorder une Aide (Retrait)</h5>
+                <div class="form-section card-shadow {% if edit_transaction and edit_transaction.type_transaction == 'RETRAIT' %}editing{% endif %}">
+                    <h5 class="font-weight-bold text-danger mb-3">
+                        {% if edit_transaction and edit_transaction.type_transaction == 'RETRAIT' %}✏️ Modifier l'Aide{% else %}📤 Accorder une Aide (Retrait){% endif %}
+                    </h5>
                     <form method="POST" action="{% url 'enregistrer_aide' %}">
                         {% csrf_token %}
+                        {% if edit_transaction and edit_transaction.type_transaction == 'RETRAIT' %}
+                            <input type="hidden" name="transaction_id" value="{{ edit_transaction.id }}">
+                        {% endif %}
                         <div class="form-group">
                             <label class="font-weight-bold small">Nom du Bénéficiaire :</label>
-                            <input type="text" name="nom" class="form-control" placeholder="Nom de la personne aidée" required>
+                            <input type="text" name="nom" class="form-control" placeholder="Nom de la personne aidée" required
+                            value="{% if edit_transaction and edit_transaction.type_transaction == 'RETRAIT' %}{{ edit_transaction.commentaire|slice:":30"|cut:'Bénéficiaire: '|truncatechars:30 }}{% endif %}">
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold small">Montant accordé (MRU) :</label>
-                            <input type="number" name="montant" class="form-control" placeholder="Sera retiré de la caisse" required>
+                            <input type="number" name="montant" class="form-control" placeholder="Sera retiré de la caisse" required
+                            value="{% if edit_transaction and edit_transaction.type_transaction == 'RETRAIT' %}{{ edit_transaction.montant }}{% endif %}">
                         </div>
                         <div class="form-group">
                             <label class="font-weight-bold small">Motif / Description :</label>
-                            <textarea name="cause" class="form-control" rows="3" placeholder="Raison de l'aide..." required></textarea>
+                            <textarea name="cause" class="form-control" rows="3" placeholder="Raison de l'aide..." required>{% if edit_transaction and edit_transaction.type_transaction == 'RETRAIT' %}{{ edit_transaction.commentaire }}{% endif %}</textarea>
                         </div>
-                        <button type="submit" class="btn btn-danger btn-block font-weight-bold">Enregistrer & Déduire</button>
+                        <button type="submit" class="btn {% if edit_transaction and edit_transaction.type_transaction == 'RETRAIT' %}btn-warning text-dark{% else %}btn-danger{% endif %} btn-block font-weight-bold">
+                            {% if edit_transaction and edit_transaction.type_transaction == 'RETRAIT' %}Mettre à jour l'Aide{% else %}Enregistrer & Déduire{% endif %}
+                        </button>
+                        {% if edit_transaction %}
+                            <a href="?" class="btn btn-light btn-sm btn-block border mt-2">Annuler la modification</a>
+                        {% endif %}
                     </form>
                 </div>
             </div>
         </div>
 
-        <div class="card mb-5 p-4 card-shadow bg-white">
-            <h5 class="font-weight-bold mb-3 text-secondary">🔍 Moteur de recherche et filtres</h5>
-            <form method="GET" action="" class="row align-items-end">
-                <div class="col-md-3 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-primary">Chercher un Donateur :</label>
-                    <input type="text" name="nom_v" class="form-control" placeholder="Nom du cotisant..." value="{{ query_nom_v }}">
+
+        <div class="card card-shadow bg-white p-4 mb-5">
+            <h5 class="font-weight-bold mb-3 text-primary">📥 Liste des Personnes ayant participé (Cotisations)</h5>
+            
+            <form method="GET" action="" class="filter-box row align-items-end">
+                <div class="col-md-4 form-group mb-2 mb-md-0">
+                    <input type="text" name="nom_v" class="form-control form-control-sm" placeholder="Rechercher un Donateur..." value="{{ query_nom_v }}">
                 </div>
                 <div class="col-md-3 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-danger">Chercher un Bénéficiaire :</label>
-                    <input type="text" name="nom_r" class="form-control" placeholder="Nom de l'aidé..." value="{{ query_nom_r }}">
-                </div>
-                <div class="col-md-2 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Mois (Cotisations) :</label>
-                    <select name="mois" class="form-control">
-                        <option value="">-- Tous --</option>
+                    <select name="mois" class="form-control form-control-sm">
+                        <option value="">-- Par Mois --</option>
                         {% for code, nom_mois in mois_choices %}
                             <option value="{{ code }}" {% if query_mois == code %}selected{% endif %}>{{ nom_mois }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2 form-group mb-2 mb-md-0">
-                    <label class="form-label font-weight-bold small text-muted">Par Année :</label>
-                    <input type="number" name="annee" class="form-control" placeholder="Ex: 2026" value="{{ query_annee }}">
+                <div class="col-md-3 form-group mb-2 mb-md-0">
+                    <input type="number" name="annee_v" class="form-control form-control-sm" placeholder="Année (Ex: 2026)" value="{{ query_annee_v }}">
                 </div>
-                <div class="col-md-2 d-flex mb-md-0">
-                    <button type="submit" class="btn btn-secondary font-weight-bold flex-grow-1 mr-1">Filtrer</button>
-                    <a href="?" class="btn btn-light border font-weight-bold">Effacer</a>
+                <div class="col-md-2 text-right">
+                    <button type="submit" class="btn btn-primary btn-sm btn-block font-weight-bold">Filtrer</button>
                 </div>
             </form>
-        </div>
 
-        <div class="card card-shadow bg-white p-3 mb-5">
-            <h5 class="font-weight-bold mb-3 text-primary">📥 Liste des Personnes ayant participé (Cotisations)</h5>
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="thead-light">
@@ -132,6 +151,7 @@
                             <th>Mois Couverts</th>
                             <th>Année</th>
                             <th>Date d'opération</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -142,10 +162,14 @@
                             <td class="align-middle text-muted">{{ t.mois_couverts|default:"—" }}</td>
                             <td class="align-middle text-muted">{{ t.annee_concernee|default:"—" }}</td>
                             <td class="align-middle text-muted"><small>{{ t.date_creation|date:"d/m/Y H:i" }}</small></td>
+                            <td class="align-middle text-center">
+                                <a href="?edit_id={{ t.id }}#top" class="action-btn" title="Modifier">✏️</a>
+                                <a href="{% url 'confirmer_suppression' t.id %}" class="action-btn" title="Supprimer">🗑️</a>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-3">Aucune cotisation enregistrée pour ces critères.</td>
+                            <td colspan="6" class="text-center text-muted py-3">Aucune cotisation enregistrée pour ces critères.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -156,19 +180,33 @@
             <nav class="mt-3">
                 <ul class="pagination pagination-sm justify-content-center">
                     {% if page_obj_v.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.previous_page_number }}&nom_v={{ query_nom_v }}&nom_r={{ query_nom_r }}&mois={{ query_mois }}&annee={{ query_annee }}&page_r={{ page_obj_r.number }}">Précédent</a></li>
+                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.previous_page_number }}&nom_v={{ query_nom_v }}&mois={{ query_mois }}&annee_v={{ query_annee_v }}&page_r={{ page_obj_r.number }}&nom_r={{ query_nom_r }}&annee_r={{ query_annee_r }}">Précédent</a></li>
                     {% endif %}
                     <li class="page-item active"><span class="page-link">Page {{ page_obj_v.number }} sur {{ page_obj_v.paginator.num_pages }}</span></li>
                     {% if page_obj_v.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.next_page_number }}&nom_v={{ query_nom_v }}&nom_r={{ query_nom_r }}&mois={{ query_mois }}&annee={{ query_annee }}&page_r={{ page_obj_r.number }}">Suivant</a></li>
+                        <li class="page-item"><a class="page-link" href="?page_v={{ page_obj_v.next_page_number }}&nom_v={{ query_nom_v }}&mois={{ query_mois }}&annee_v={{ query_annee_v }}&page_r={{ page_obj_r.number }}&nom_r={{ query_nom_r }}&annee_r={{ query_annee_r }}">Suivant</a></li>
                     {% endif %}
                 </ul>
             </nav>
             {% endif %}
         </div>
 
-        <div class="card card-shadow bg-white p-3 mb-5">
+
+        <div class="card card-shadow bg-white p-4 mb-5">
             <h5 class="font-weight-bold mb-3 text-danger">📤 Liste des Personnes ayant pris l'argent (Aides Accordées)</h5>
+            
+            <form method="GET" action="" class="filter-box row align-items-end">
+                <div class="col-md-5 form-group mb-2 mb-md-0">
+                    <input type="text" name="nom_r" class="form-control form-control-sm" placeholder="Rechercher un Bénéficiaire..." value="{{ query_nom_r }}">
+                </div>
+                <div class="col-md-5 form-group mb-2 mb-md-0">
+                    <input type="number" name="annee_r" class="form-control form-control-sm" placeholder="Année (Ex: 2026)" value="{{ query_annee_r }}">
+                </div>
+                <div class="col-md-2 text-right">
+                    <button type="submit" class="btn btn-danger btn-sm btn-block font-weight-bold">Filtrer</button>
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="thead-light">
@@ -176,7 +214,8 @@
                             <th>Bénéficiaire / Description</th>
                             <th>Montant Reçu</th>
                             <th>Date d'opération</th>
-                            <th>Action</th>
+                            <th>Justificatif</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -188,10 +227,14 @@
                             <td class="align-middle">
                                 <a href="{% url 'telecharger_pdf' t.id %}" class="btn btn-sm btn-outline-danger font-weight-bold">📄 Reçu PDF</a>
                             </td>
+                            <td class="align-middle text-center">
+                                <a href="?edit_id={{ t.id }}#top" class="action-btn" title="Modifier">✏️</a>
+                                <a href="{% url 'confirmer_suppression' t.id %}" class="action-btn" title="Supprimer">🗑️</a>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-3">Aucune aide enregistrée pour ces critères.</td>
+                            <td colspan="5" class="text-center text-muted py-3">Aucune aide enregistrée pour ces critères.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -202,11 +245,11 @@
             <nav class="mt-3">
                 <ul class="pagination pagination-sm justify-content-center">
                     {% if page_obj_r.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.previous_page_number }}&nom_v={{ query_nom_v }}&nom_r={{ query_nom_r }}&mois={{ query_mois }}&annee={{ query_annee }}&page_v={{ page_obj_v.number }}">Précédent</a></li>
+                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.previous_page_number }}&nom_r={{ query_nom_r }}&annee_r={{ query_annee_r }}&page_v={{ page_obj_v.number }}&nom_v={{ query_nom_v }}&mois={{ query_mois }}&annee_v={{ query_annee_v }}">Précédent</a></li>
                     {% endif %}
                     <li class="page-item active"><span class="page-link">Page {{ page_obj_r.number }} sur {{ page_obj_r.paginator.num_pages }}</span></li>
                     {% if page_obj_r.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.next_page_number }}&nom_v={{ query_nom_v }}&nom_r={{ query_nom_r }}&mois={{ query_mois }}&annee={{ query_annee }}&page_v={{ page_obj_v.number }}">Suivant</a></li>
+                        <li class="page-item"><a class="page-link" href="?page_r={{ page_obj_r.next_page_number }}&nom_r={{ query_nom_r }}&annee_r={{ query_annee_r }}&page_v={{ page_obj_v.number }}&nom_v={{ query_nom_v }}&mois={{ query_mois }}&annee_v={{ query_annee_v }}">Suivant</a></li>
                     {% endif %}
                 </ul>
             </nav>
