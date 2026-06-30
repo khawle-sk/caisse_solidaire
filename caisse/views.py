@@ -7,7 +7,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from .models import Transaction
 
-@login_required(login_url='login')
+# 🔥 SANS @login_required : Tout le monde peut voir la page d'accueil
 def home(request):
     # 1. Calcul du solde dynamique global
     total_versements = Transaction.objects.filter(type_transaction='VERSEMENT', actif=True).aggregate(Sum('montant'))['montant__sum'] or 0
@@ -30,7 +30,6 @@ def home(request):
     if query_nom_v:
         versements_list = versements_list.filter(commentaire__icontains=query_nom_v)
     if query_mois:
-        # 🔥 Correction : On récupère le libellé en clair du mois pour la recherche textuelle
         nom_mois_clair = dict(Transaction.MOIS_CHOICES).get(query_mois, query_mois)
         versements_list = versements_list.filter(mois_couverts__icontains=nom_mois_clair)
     if query_annee_v:
@@ -42,7 +41,7 @@ def home(request):
     if query_annee_r:
         retraits_list = retraits_list.filter(date_creation__year=query_annee_r)
 
-    # 4. Doubles Paginations Indépendantes (15 par page par défaut)
+    # 4. Doubles Paginations Indépendantes
     page_versements = request.GET.get('page_v', 1)
     paginator_v = Paginator(versements_list, 15)
     page_obj_v = paginator_v.get_page(page_versements)
@@ -51,10 +50,10 @@ def home(request):
     paginator_r = Paginator(retraits_list, 15)
     page_obj_r = paginator_r.get_page(page_retraits)
 
-    # Variables d'édition (si une modification est demandée)
+    # Variables d'édition (uniquement si l'utilisateur est authentifié pour éviter des bugs)
     edit_transaction = None
     edit_id = request.GET.get('edit_id')
-    if edit_id:
+    if edit_id and request.user.is_authenticated:
         edit_transaction = get_object_or_404(Transaction, id=edit_id, actif=True)
 
     context = {
@@ -84,14 +83,14 @@ def AjouterDon(request):
             montant_calcule = nb_mois * 100
             mois_string = ", ".join([dict(Transaction.MOIS_CHOICES).get(m, m) for m in mois_list])
             
-            if transaction_id: # Mode Modification
+            if transaction_id:
                 t = get_object_or_404(Transaction, id=transaction_id, type_transaction='VERSEMENT')
                 t.montant = montant_calcule
                 t.annee_concernee = annee if annee else None
                 t.mois_couverts = mois_string
                 t.commentaire = f"Donateur: {nom_donateur}"
                 t.save()
-            else: # Mode Création
+            else:
                 Transaction.objects.create(
                     type_transaction='VERSEMENT',
                     montant=montant_calcule,
@@ -111,12 +110,12 @@ def EnregistrerAide(request):
         cause = request.POST.get('cause', '').strip()
         
         if beneficiaire and montant:
-            if transaction_id: # Mode Modification
+            if transaction_id:
                 t = get_object_or_404(Transaction, id=transaction_id, type_transaction='RETRAIT')
                 t.montant = montant
                 t.commentaire = f"Bénéficiaire: {beneficiaire} | Cause: {cause}"
                 t.save()
-            else: # Mode Création
+            else:
                 Transaction.objects.create(
                     type_transaction='RETRAIT',
                     montant=montant,
@@ -129,7 +128,7 @@ def EnregistrerAide(request):
 def ConfirmerSuppression(request, transaction_id):
     transaction = get_object_or_404(Transaction, id=transaction_id, actif=True)
     if request.method == 'POST':
-        transaction.delete() # Ou transaction.actif = False selon tes préférences
+        transaction.delete()
         return redirect('home')
     return render(request, 'confirmer_suppression.html', {'transaction': transaction})
 
@@ -137,7 +136,7 @@ def ConfirmerSuppression(request, transaction_id):
 def TelechargerPDF(request, transaction_id):
     aide = get_object_or_404(Transaction, id=transaction_id, type_transaction='RETRAIT')
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="Recu_Aide_{transaction_id}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename=\"Recu_Aide_{transaction_id}.pdf\"'
     
     p = canvas.Canvas(response, pagesize=letter)
     p.setFont("Helvetica-Bold", 20)

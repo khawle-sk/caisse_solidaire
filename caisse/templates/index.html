@@ -23,11 +23,15 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand font-weight-bold" href="?">💰 Caisse Solidaire</a>
-            <span class="navbar-text text-light mr-3">Utilisateur : <strong>{{ request.user.username }}</strong></span>
-            <form action="{% url 'logout' %}" method="POST" class="form-inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-outline-danger btn-sm">Se déconnecter</button>
-            </form>
+            {% if request.user.is_authenticated %}
+                <span class="navbar-text text-light mr-3">Admin : <strong>{{ request.user.username }}</strong></span>
+                <form action="{% url 'logout' %}" method="POST" class="form-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm">Se déconnecter</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-primary btn-sm font-weight-bold px-3">🔑 Connexion Administrateur</a>
+            {% endif %}
         </div>
     </nav>
 
@@ -41,6 +45,7 @@
             </div>
         </div>
 
+        {% if request.user.is_authenticated %}
         <div class="row">
             <div class="col-md-6">
                 <div class="form-section card-shadow {% if edit_transaction and edit_transaction.type_transaction == 'VERSEMENT' %}editing{% endif %}">
@@ -117,6 +122,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
 
         <div class="card card-shadow bg-white p-4 mb-5">
@@ -151,7 +157,7 @@
                             <th>Mois Couverts</th>
                             <th>Année</th>
                             <th>Date d'opération</th>
-                            <th class="text-center">Actions</th>
+                            {% if request.user.is_authenticated %}<th class="text-center">Actions</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -162,10 +168,12 @@
                             <td class="align-middle text-muted">{{ t.mois_couverts|default:"—" }}</td>
                             <td class="align-middle text-muted">{{ t.annee_concernee|default:"—" }}</td>
                             <td class="align-middle text-muted"><small>{{ t.date_creation|date:"d/m/Y H:i" }}</small></td>
+                            {% if request.user.is_authenticated %}
                             <td class="align-middle text-center">
                                 <a href="?edit_id={{ t.id }}#top" class="action-btn" title="Modifier">✏️</a>
                                 <a href="{% url 'confirmer_suppression' t.id %}" class="action-btn" title="Supprimer">🗑️</a>
                             </td>
+                            {% endif %}
                         </tr>
                         {% empty %}
                         <tr>
@@ -215,7 +223,7 @@
                             <th>Montant Reçu</th>
                             <th>Date d'opération</th>
                             <th>Justificatif</th>
-                            <th class="text-center">Actions</th>
+                            {% if request.user.is_authenticated %}<th class="text-center">Actions</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -227,10 +235,12 @@
                             <td class="align-middle">
                                 <a href="{% url 'telecharger_pdf' t.id %}" class="btn btn-sm btn-outline-danger font-weight-bold">📄 Reçu PDF</a>
                             </td>
+                            {% if request.user.is_authenticated %}
                             <td class="align-middle text-center">
                                 <a href="?edit_id={{ t.id }}#top" class="action-btn" title="Modifier">✏️</a>
                                 <a href="{% url 'confirmer_suppression' t.id %}" class="action-btn" title="Supprimer">🗑️</a>
                             </td>
+                            {% endif %}
                         </tr>
                         {% empty %}
                         <tr>
