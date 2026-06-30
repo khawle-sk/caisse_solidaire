@@ -29,11 +29,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 # Dit à Django où aller après une connexion réussie (ici, la page d'accueil)
 LOGIN_REDIRECT_URL = '/'
 
 # Dit à Django où aller après une déconnexion (ici, la page de connexion)
-LOGOUT_REDIRECT_URL = 'login'
+LOGOUT_REDIRECT_URL = '/'
 # Application definition
 
 INSTALLED_APPS = [
